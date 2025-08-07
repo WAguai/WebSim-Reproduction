@@ -23,16 +23,14 @@ export async function POST(req: Request) {
         baseURL: process.env.OPENAI_BASE_URL, 
     });
 
-    const response = client.responses.create({
-        model: "anthropic.claude-3-5-haiku-20241022-v1:0",
-        input: {...systemMessages,...userMessages},
-        previous_response_id: previousChatId,
-        text:{
-            format:zodTextFormat(getGameLogicVO, "event")
-        } 
-    });
-    console.log(response)
-    return response;
+    // const response = await client.responses.create({
+    //     model: "anthropic.claude-3-5-haiku-20241022-v1:0",
+    //     input: {...systemMessages,...userMessages},
+    //     previous_response_id: previousChatId,
+    //     text:{
+    //         format:zodTextFormat(getGameLogicVO, "event")
+    //     } 
+    // });
 
     // 1. 将系统提示词和用户提示词添加到消息列表的开头
     // 使用展开运算符 (spread operator) 创建一个新的数组
@@ -42,8 +40,6 @@ export async function POST(req: Request) {
       // 2. 将包含系统提示词的完整消息列表传递给 API
       messages: [...systemMessages,...userMessages],
     });
-    console.log(completion.choices);
-    
     return NextResponse.json(completion.choices[0].message);
   } catch (error) {
     console.error(error);

@@ -16,8 +16,8 @@ export async function getGameLogic(systemMessage,userMessage,previousChatId=null
 
   const data = await response.json();
   // 处理返回的数据
-  console.log(data);
   return data;
 }
+
 
 
