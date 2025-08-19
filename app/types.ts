@@ -1,3 +1,5 @@
+// 前端核心接口定义
+
 export interface Message {
   id: string
   role: 'user' | 'assistant'
@@ -6,19 +8,19 @@ export interface Message {
 }
 
 export interface GameFiles {
-  html: string
-  js: string
-  css: string
+  html: string  // 包含所有代码的完整HTML文件
 }
 
 export interface GameVersion {
   id: number
   files: GameFiles
   description: string
+  userPrompt: string  // 用户输入的原始提示词
   timestamp: Date
   messageId: string
 }
 
+// 后端API响应接口
 export interface GameGenerationResult {
   files: GameFiles
   description: string
@@ -27,19 +29,9 @@ export interface GameGenerationResult {
   audioResources: string[]
 }
 
-export interface GameLogicResult {
-  title: string
-  description: string
-  gameLogic: string
-  gameType: string
-}
-
-export interface GameFileResult {
-  files: GameFiles
-}
-
-export interface ScriptIntegrationResult {
-  files: GameFiles
-  imageResources: string[],
-  audioResources: string[]
+// 后端健康检查响应
+export interface BackendHealthResponse {
+  status: string
+  timestamp: string
+  service: string
 }

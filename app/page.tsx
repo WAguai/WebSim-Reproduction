@@ -1,9 +1,11 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import GamePreview from './components/GamePreview'
 import ChatHistory from './components/ChatHistory'
 import ChatInput from './components/ChatInput'
+import BackendHealthCheck from './components/BackendHealthCheck'
+import ResizablePanels from './components/ResizablePanels'
 import { GameAgents } from './lib/gameAgents'
 import { Message, GameVersion } from './types'
 export default function Home() {
@@ -136,29 +138,38 @@ export default function Home() {
 
   return (
     <div className="h-screen flex flex-col bg-gray-100">
-      <div className="flex-1 flex overflow-hidden">
-        {/* 左侧游戏预览区域 */}
-        <div className="flex-1 bg-white border-r border-gray-300">
-          <GamePreview 
-            gameVersion={currentGameIndex >= 0 ? gameVersions[currentGameIndex] : null}
-            isGenerating={isGenerating}
-            onGameVersionUpdate={handleGameVersionUpdate}
-          />
-        </div>
-
-        {/* 右侧聊天区域 */}
-        <div className="w-96 flex flex-col bg-gray-900">
-          <ChatHistory 
-            messages={messages}
-            gameVersions={gameVersions}
-            onSelectGameVersion={handleSelectGameVersion}
-            currentGameIndex={currentGameIndex}
-          />
-          <ChatInput 
-            onSendMessage={handleSendMessage}
-            isGenerating={isGenerating}
-          />
-        </div>
+      {/* 顶部后端状态检查 */}
+      {/* <div className="p-4 bg-white border-b border-gray-200">
+        <BackendHealthCheck />
+      </div> */}
+      
+      <div className="flex-1 overflow-hidden">
+        <ResizablePanels
+          leftPanel={
+            <GamePreview 
+              gameVersion={currentGameIndex >= 0 ? gameVersions[currentGameIndex] : null}
+              isGenerating={isGenerating}
+              onGameVersionUpdate={handleGameVersionUpdate}
+            />
+          }
+          rightPanel={
+            <div className="h-full flex flex-col">
+              <ChatHistory 
+                messages={messages}
+                gameVersions={gameVersions}
+                onSelectGameVersion={handleSelectGameVersion}
+                currentGameIndex={currentGameIndex}
+              />
+              <ChatInput 
+                onSendMessage={handleSendMessage}
+                isGenerating={isGenerating}
+              />
+            </div>
+          }
+          defaultLeftWidth={70}
+          minLeftWidth={40}
+          maxLeftWidth={80}
+        />
       </div>
     </div>
   )

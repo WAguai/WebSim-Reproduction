@@ -1,7 +1,9 @@
 'use client'
 
+import { useState } from 'react'
 import { Message, GameVersion } from '../types'
-import { User, Bot, Edit3 } from 'lucide-react'
+import { Bot, MoreVertical, Code, Download, ExternalLink, Copy } from 'lucide-react'
+import SourceViewer from './SourceViewer'
 
 interface ChatHistoryProps {
   messages: Message[]
@@ -10,14 +12,66 @@ interface ChatHistoryProps {
   currentGameIndex: number
 }
 
-export default function ChatHistory({ 
-  messages, 
-  gameVersions, 
-  onSelectGameVersion, 
-  currentGameIndex 
+export default function ChatHistory({
+  messages,
+  gameVersions,
+  onSelectGameVersion,
+  currentGameIndex
 }: ChatHistoryProps) {
+  const [showMenu, setShowMenu] = useState<number | null>(null)
+  const [sourceViewer, setSourceViewer] = useState<{ isOpen: boolean; gameVersion: GameVersion | null }>({
+    isOpen: false,
+    gameVersion: null
+  })
+
   const getGameVersionForMessage = (messageId: string) => {
     return gameVersions.find(version => version.messageId === messageId)
+  }
+
+  const handleMenuAction = (action: string, gameVersion: GameVersion) => {
+    setShowMenu(null)
+    
+    switch (action) {
+      case 'viewSource':
+        setSourceViewer({ isOpen: true, gameVersion })
+        break
+      case 'download':
+        handleDownload(gameVersion)
+        break
+      case 'openInNewTab':
+        handleOpenInNewTab(gameVersion)
+        break
+      case 'copy':
+        handleCopy(gameVersion)
+        break
+    }
+  }
+
+  const handleDownload = (gameVersion: GameVersion) => {
+    const blob = new Blob([gameVersion.files.html], { type: 'text/html' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `game-v${gameVersion.id + 1}.html`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
+  const handleOpenInNewTab = (gameVersion: GameVersion) => {
+    const blob = new Blob([gameVersion.files.html], { type: 'text/html' })
+    const url = URL.createObjectURL(blob)
+    window.open(url, '_blank')
+  }
+
+  const handleCopy = async (gameVersion: GameVersion) => {
+    try {
+      await navigator.clipboard.writeText(gameVersion.files.html)
+      // 可以添加一个toast提示
+    } catch (err) {
+      console.error('复制失败:', err)
+    }
   }
 
   // 生成游戏缩略图
@@ -73,23 +127,21 @@ export default function ChatHistory({
       <div className="p-4 space-y-3">
         {gameVersions.map((gameVersion, index) => {
           const isSelected = currentGameIndex === index
-          
+
           return (
             <button
               key={gameVersion.id}
               onClick={() => onSelectGameVersion(index)}
-              className={`w-full p-3 rounded-lg border transition-all duration-200 ${
-                isSelected 
-                  ? 'border-blue-500 bg-blue-500/10' 
-                  : 'border-gray-600 bg-gray-800 hover:bg-gray-700'
-              }`}
+              className={`w-full p-3 rounded-lg border transition-all duration-200 ${isSelected
+                ? 'border-blue-500 bg-blue-500/10'
+                : 'border-gray-600 bg-gray-800 hover:bg-gray-700'
+                }`}
             >
               <div className="flex items-start space-x-3">
                 {/* 版本标识和缩略图 */}
                 <div className="flex-shrink-0">
-                  <div className={`w-12 h-8 rounded text-xs font-bold flex items-center justify-center mb-1 ${
-                    isSelected ? 'bg-blue-500 text-white' : 'bg-gray-600 text-gray-300'
-                  }`}>
+                  <div className={`w-12 h-8 rounded text-xs font-bold flex items-center justify-center mb-1 ${isSelected ? 'bg-blue-500 text-white' : 'bg-gray-600 text-gray-300'
+                    }`}>
                     v{index + 1}
                   </div>
                   <div className="w-12 h-12 rounded border border-gray-600 overflow-hidden">
@@ -97,19 +149,79 @@ export default function ChatHistory({
                   </div>
                 </div>
 
-                {/* 游戏描述 */}
-                <div className="flex-1 text-left">
-                  <div className="text-sm font-medium text-white mb-1">
-                    {gameVersion.description.split('！')[0]}
+                {/* 游戏信息 */}
+                <div className="flex-1 text-left min-w-0">
+                  <div className="text-sm font-medium text-white mb-1 truncate">
+                    {gameVersion.userPrompt}
                   </div>
-                  <div className="text-xs text-gray-400">
+                  <div className="text-xs text-gray-400 mb-1 overflow-hidden" style={{
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical'
+                  }}>
+                    {gameVersion.description}
+                  </div>
+                  <div className="text-xs text-gray-500">
                     {gameVersion.timestamp.toLocaleString()}
                   </div>
                 </div>
 
-                {/* 编辑图标 */}
-                <div className="flex-shrink-0">
-                  <Edit3 size={14} className="text-gray-500" />
+                {/* 菜单按钮 */}
+                <div className="flex-shrink-0 relative">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setShowMenu(showMenu === index ? null : index)
+                    }}
+                    className="p-1 hover:bg-gray-600 rounded text-gray-400 hover:text-gray-200"
+                  >
+                    <MoreVertical size={14} />
+                  </button>
+                  
+                  {showMenu === index && (
+                    <div className="absolute right-0 top-8 bg-gray-800 border border-gray-600 rounded-lg shadow-lg py-1 z-20 min-w-[160px]">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleMenuAction('viewSource', gameVersion)
+                        }}
+                        className="w-full px-3 py-2 text-left text-sm hover:bg-gray-700 flex items-center space-x-2 text-gray-200"
+                      >
+                        <Code size={14} />
+                        <span>查看源码</span>
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleMenuAction('download', gameVersion)
+                        }}
+                        className="w-full px-3 py-2 text-left text-sm hover:bg-gray-700 flex items-center space-x-2 text-gray-200"
+                      >
+                        <Download size={14} />
+                        <span>下载HTML</span>
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleMenuAction('openInNewTab', gameVersion)
+                        }}
+                        className="w-full px-3 py-2 text-left text-sm hover:bg-gray-700 flex items-center space-x-2 text-gray-200"
+                      >
+                        <ExternalLink size={14} />
+                        <span>新窗口打开</span>
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleMenuAction('copy', gameVersion)
+                        }}
+                        className="w-full px-3 py-2 text-left text-sm hover:bg-gray-700 flex items-center space-x-2 text-gray-200"
+                      >
+                        <Copy size={14} />
+                        <span>复制代码</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -128,7 +240,7 @@ export default function ChatHistory({
             </button>
           )
         })}
-        
+
         {/* 空状态：没有游戏版本时的提示 */}
         {gameVersions.length === 0 && (
           <div className="text-center text-gray-400 py-12">
@@ -140,7 +252,7 @@ export default function ChatHistory({
             <p className="text-xs text-gray-500">
               AI 将为你生成可玩的网页游戏
             </p>
-            
+
             {/* 示例提示 */}
             <div className="mt-6 text-xs text-gray-600">
               <p className="mb-2">💡 例如：</p>
@@ -152,6 +264,23 @@ export default function ChatHistory({
           </div>
         )}
       </div>
+
+      {/* 源码查看器 */}
+      {sourceViewer.gameVersion && (
+        <SourceViewer
+          gameVersion={sourceViewer.gameVersion}
+          isOpen={sourceViewer.isOpen}
+          onClose={() => setSourceViewer({ isOpen: false, gameVersion: null })}
+        />
+      )}
+
+      {/* 点击外部关闭菜单 */}
+      {showMenu !== null && (
+        <div
+          className="fixed inset-0 z-10"
+          onClick={() => setShowMenu(null)}
+        />
+      )}
     </div>
   )
 }

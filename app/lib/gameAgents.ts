@@ -1,55 +1,43 @@
 import { Message, GameGenerationResult } from '../types'
-import { GameLogicAgent } from './agents/gameLogicAgent'
-import { ImageResourceAgent } from './agents/imageResourceAgent'
-import { AudioResourceAgent } from './agents/audioResourceAgent'
-import { ScriptIntegrationAgent } from './agents/scriptIntegrationAgent'
-import { GameFileGenerateAgent } from './agents/fileGnerateAgent'
-import { Files } from 'lucide-react'
-export class GameAgents {
-  private gameLogicAgent: GameLogicAgent
-  private imageResourceAgent: ImageResourceAgent
-  private audioResourceAgent: AudioResourceAgent
-  private scriptIntegrationAgent: ScriptIntegrationAgent
-  private fileGenerateAgent: GameFileGenerateAgent
+import { generateGame, checkBackendHealth } from './aiClient'
 
+export class GameAgents {
   constructor() {
-    this.gameLogicAgent = new GameLogicAgent()
-    this.imageResourceAgent = new ImageResourceAgent()
-    this.audioResourceAgent = new AudioResourceAgent()
-    this.scriptIntegrationAgent = new ScriptIntegrationAgent()
-    this.fileGenerateAgent = new GameFileGenerateAgent()
+    // 不再需要初始化各个Agent，直接调用后端API
   }
 
-  // 多代理协作生成游戏
-  public async generateGame(prompt: string, context: Message[]): Promise<GameGenerationResult> {
+  // 多代理协作生成游戏 - 现在通过后端API实现
+  public async generateGame(prompt: string, context: Message[] = []): Promise<GameGenerationResult> {
     try {
-      // 1. 🎮 游戏逻辑 Agent 处理
-      const gameLogicResult = await this.gameLogicAgent.generateGameLogic(prompt)
+      console.log('🚀 开始调用后端生成游戏...');
+      console.log('📝 用户需求:', prompt);
       
-      const fileGenerateResult = await this.fileGenerateAgent.generateGameFiles(gameLogicResult)
+      // 转换context格式
+      const contextMessages = context.map(msg => ({
+        role: msg.role,
+        content: msg.content,
+        timestamp: msg.timestamp
+      }));
       
-      // 2. 🎨 图像资源 Agent 处理
-      const imageResult = await this.imageResourceAgent.generateImageResources(gameLogicResult.gameType)
+      // 调用后端API
+      const result = await generateGame(prompt, contextMessages);
       
-      // 3. 🔊 音效资源 Agent 处理
-      const audioResult = await this.audioResourceAgent.generateAudioResources(gameLogicResult.gameType)
+      console.log('✅ 游戏生成完成:', result);
+      return result;
       
-      // 4. 🧠 脚本整合 Agent 处理
-      const integrationResult = await this.scriptIntegrationAgent.integrateResources(
-        fileGenerateResult.files,
-        imageResult.imageResources,
-        audioResult.audioResources
-      )
-      return {
-        files: integrationResult.files,
-        description: gameLogicResult.description,
-        gameLogic: gameLogicResult.gameLogic,
-        imageResources: imageResult.imageResources,
-        audioResources: audioResult.audioResources
-      }
     } catch (error) {
-      console.error('多代理游戏生成失败:', error)
-      throw new Error('游戏生成过程中出现错误')
+      console.error('❌ 游戏生成失败:', error);
+      throw new Error(`游戏生成过程中出现错误: ${error.message}`);
+    }
+  }
+
+  // 检查后端服务状态
+  public async checkHealth(): Promise<any> {
+    try {
+      return await checkBackendHealth();
+    } catch (error) {
+      console.error('❌ 后端服务检查失败:', error);
+      throw new Error('后端服务不可用，请检查服务是否启动');
     }
   }
 }
